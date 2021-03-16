@@ -30,7 +30,7 @@ source /venv/bin/activate
 
 #### Install dependencies
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 #### Download binaries
@@ -61,7 +61,7 @@ python3 probe.py -h
 ```
 
 #### Analyse and print locally Quality Index
-Change input based on your actual video. It can be UDP streaming as in example, or local files. 
+Optionally, change input based on your actual video (By default, the input is udp://localhost:1234). It can be streaming or local files. 
 ```bash
 python3 probe.py -i [INPUT]
 ```
