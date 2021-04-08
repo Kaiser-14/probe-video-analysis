@@ -72,8 +72,8 @@ Provide IP and port from Kafka server, and also topic to produce messages
 python3 probe.py -i [INPUT] -k [IP] [PORT] -t [TOPIC]
 ```
 
-#### Analyse and send Quality Index via Rest API
-Provide full Rest API path to send information
+#### Analyse and send Quality Index via REST API
+Provide full REST API path to send information
 ```bash
 python3 probe.py -i [INPUT] -r [REST]
 ```

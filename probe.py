@@ -40,6 +40,7 @@ parser.add_argument(
 	help='Rest API server url (IP PORT)')
 
 args = parser.parse_args()
+mac_address = ':'.join(re.findall('..', '%012x' % getnode()))
 
 if args.kafka:
 	try:
@@ -51,11 +52,31 @@ if args.kafka:
 if args.rest:
 	try:
 		req = requests.get(args.rest)
+
+		# Create metrics structure
+		metrics = {
+			'uuid': 'mac_address',
+			'value': {
+				'blockiness': None,
+				'spatial_activity': None,
+				'block_loss': None,
+				'blur': None,
+				'temporal_activity': None
+			},
+			'timestamp': datetime.datetime.now().timestamp()
+		}
+
+		# Create specific item if not present in server (409 code received if duplicated)
+		if len(req.json()) > 0:
+			for item in req.json():
+				if item['uuid'] != mac_address:
+					post = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+		else:
+			post = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+
 	except requests.exceptions.ConnectionError:
 		print('Probe could not reach REST API server')
 		exit(0)
-
-mac_address = ':'.join(re.findall('..', '%012x' % getnode()))
 
 try:
 	while True:
@@ -68,11 +89,8 @@ try:
 			ffmpeg.run(stream, overwrite_output=True, quiet=True)
 
 		except ffmpeg.Error as e:
-			# print('stdout:', e.stdout.decode('utf8'))
-			# print('stderr:', e.stderr.decode('utf8'))
-			# raise e
 			time.sleep(1)
-			print('Retrying...')
+			# print('Retrying...')
 
 		# Analyze raw video data
 		text = subprocess.run([
@@ -148,11 +166,11 @@ try:
 
 		# Send information via Rest API
 		if args.rest:
-			# req = requests.put(args.rest, data=metrics)
-			req = requests.put(args.rest, json=metrics, headers={'Content-type': 'application/json'})
+			req = requests.put(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
 			print(metrics)
 			if req.status_code:
 				print('Metrics sent via REST API')
+				print('---------------')
 			else:
 				print('Not possible to send metrics via REST API')
 
