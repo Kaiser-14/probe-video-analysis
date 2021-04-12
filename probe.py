@@ -6,6 +6,7 @@ import sys
 import time
 import json
 from uuid import getnode
+import os
 
 import ffmpeg
 import kafka
@@ -55,7 +56,7 @@ if args.rest:
 
 		# Create metrics structure
 		metrics = {
-			'uuid': 'mac_address',
+			'uuid': mac_address,
 			'value': {
 				'blockiness': None,
 				'spatial_activity': None,
@@ -67,11 +68,15 @@ if args.rest:
 		}
 
 		# Create specific item if not present in server (409 code received if duplicated)
+		create_item = False
 		if len(req.json()) > 0:
 			for item in req.json():
 				if item['uuid'] != mac_address:
-					post = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+					create_item = True
 		else:
+			create_item = True
+
+		if create_item:
 			post = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
 
 	except requests.exceptions.ConnectionError:
@@ -84,8 +89,9 @@ try:
 		try:
 			stream = ffmpeg.input(args.input)
 
+			print('Obtaining data...')
 			stream = ffmpeg.output(
-				stream, 'Multimedia/frame_ffmpeg.yuv', format='rawvideo', pix_fmt='yuv420p', t=4, framerate=60)
+				stream, 'frames_ffmpeg.yuv', format='rawvideo', pix_fmt='yuv420p', t=4, framerate=60)
 			ffmpeg.run(stream, overwrite_output=True, quiet=True)
 
 		except ffmpeg.Error as e:
@@ -93,9 +99,10 @@ try:
 			# print('Retrying...')
 
 		# Analyze raw video data
+		print('Analyzing data...')
 		text = subprocess.run([
 			'./mitsuMultithread',
-			'Multimedia/frame_ffmpeg.yuv',
+			'frames_ffmpeg.yuv',
 			'1920',
 			'1080'
 		], capture_output=True, text=True).stdout
@@ -147,7 +154,9 @@ try:
 
 		# Print information locally
 		if not args.kafka and not args.rest:
+			print('Metrics:')
 			print(metrics)
+			print('---------------')
 
 		# Send information via Kafka bus
 		if args.kafka:
@@ -161,19 +170,31 @@ try:
 				producer.send(args.topic[2], block_loss)
 				producer.send(args.topic[3], blur)
 				producer.send(args.topic[4], temporal_activity)
+			print('Metrics published into Kafka bus:')
 			print(metrics)
-			print('Metrics published into Kafka bus')
+			print('---------------')
 
 		# Send information via Rest API
 		if args.rest:
 			req = requests.put(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
-			print(metrics)
-			if req.status_code:
-				print('Metrics sent via REST API')
-				print('---------------')
+			# Update metrics with PUT message. If it fails (e.g. instance deleted from API server), try to create the
+			# instance and resend metrics.
+			if req.status_code == 200:
+				print('Metrics sent via REST API:')
 			else:
-				print('Not possible to send metrics via REST API')
+				req = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+				if req.status_code == 201:
+					print('Metrics sent via REST API:')
+				else:
+					print('Could not send messages. Check API server.')
+			print(metrics)
+			print('---------------')
 
 except KeyboardInterrupt:
 	print('Received Keyboard Interrupt. Shutting down.')
+	try:
+		os.remove('frames_ffmpeg.yuv')
+		os.remove('metricsResultsCSV.csv')
+	except FileNotFoundError:
+		pass
 	exit(0)
