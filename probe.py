@@ -1,12 +1,12 @@
 import argparse
 import datetime
+import json
+import os
 import re
 import subprocess
 import sys
 import time
-import json
 from uuid import getnode
-import os
 
 import ffmpeg
 import kafka
@@ -68,19 +68,11 @@ if args.rest:
 		}
 
 		# Create specific item if not present in server (409 code received if duplicated)
-		create_item = False
-		if len(req.json()) > 0:
-			for item in req.json():
-				if item['uuid'] != mac_address:
-					create_item = True
-		else:
-			create_item = True
-
-		if create_item:
-			post = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+		if mac_address not in list(item['uuid'] for item in req.json()):
+			requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
 
 	except requests.exceptions.ConnectionError:
-		print('Probe could not reach REST API server')
+		print('Probe can not reach REST API server')
 		exit(0)
 
 try:
@@ -176,13 +168,21 @@ try:
 
 		# Send information via Rest API
 		if args.rest:
-			req = requests.put(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+
+			try:
+				req = requests.put(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+			except:
+				req.status_code = 404
 			# Update metrics with PUT message. If it fails (e.g. instance deleted from API server), try to create the
 			# instance and resend metrics.
 			if req.status_code == 200:
 				print('Metrics sent via REST API:')
 			else:
-				req = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+				try:
+					req = requests.post(args.rest, json=[metrics], headers={'Content-type': 'application/json'})
+				except:
+					req.status_code = 404
+
 				if req.status_code == 201:
 					print('Metrics sent via REST API:')
 				else:

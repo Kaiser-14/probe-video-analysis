@@ -32,7 +32,11 @@ source /venv/bin/activate
 ```bash
 pip3 install -r requirements.txt
 ```
-
+#### Install FFmpeg
+[Linux]
+```bash
+sudo apt install ffmpeg
+```
 #### Download binaries
 [Linux]
 ```bash
