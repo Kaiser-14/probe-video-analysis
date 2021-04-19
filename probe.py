@@ -157,11 +157,11 @@ try:
 				producer.send(args.topic[0], json.dumps(metrics).encode('utf-8'))
 			# Publish metrics individually
 			else:
-				producer.send(args.topic[0], blockiness)
-				producer.send(args.topic[1], spatial_activity)
-				producer.send(args.topic[2], block_loss)
-				producer.send(args.topic[3], blur)
-				producer.send(args.topic[4], temporal_activity)
+				producer.send(args.topic[0], str(blockiness).encode('utf-8'))
+				producer.send(args.topic[1], str(spatial_activity).encode('utf-8'))
+				producer.send(args.topic[2], str(block_loss).encode('utf-8'))
+				producer.send(args.topic[3], str(blur).encode('utf-8'))
+				producer.send(args.topic[4], str(temporal_activity).encode('utf-8'))
 			print('Metrics published into Kafka bus:')
 			print(metrics)
 			print('---------------')
