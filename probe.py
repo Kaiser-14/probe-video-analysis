@@ -31,7 +31,7 @@ parser.add_argument(
 	'-t',
 	dest='topic',
 	type=str,
-	action='append',
+	nargs=5,
 	required='-k' in sys.argv,
 	help='Kafka topic(s). Required if Kafka server provided')
 parser.add_argument(
