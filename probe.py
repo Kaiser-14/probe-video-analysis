@@ -157,11 +157,81 @@ try:
 				producer.send(args.topic[0], json.dumps(metrics).encode('utf-8'))
 			# Publish metrics individually
 			else:
-				producer.send(args.topic[0], str(blockiness).encode('utf-8'))
-				producer.send(args.topic[1], str(spatial_activity).encode('utf-8'))
-				producer.send(args.topic[2], str(block_loss).encode('utf-8'))
-				producer.send(args.topic[3], str(blur).encode('utf-8'))
-				producer.send(args.topic[4], str(temporal_activity).encode('utf-8'))
+
+				metrics_blockiness = {
+					"records": [
+						{
+							"value": {
+								"timestamp": datetime.datetime.now().timestamp(),
+								"metric_value": str(blockiness),
+								"unit": "double",
+								"device_id": mac_address,
+								"context": "nil",
+							}
+						}
+					]
+				}
+				metrics_spatial_activity = {
+					"records": [
+						{
+							"value": {
+								"timestamp": datetime.datetime.now().timestamp(),
+								"metric_value": str(spatial_activity),
+								"unit": "double",
+								"device_id": mac_address,
+								"context": "nil",
+							}
+						}
+					]
+				}
+
+				metrics_block_loss = {
+					"records": [
+						{
+							"value": {
+								"timestamp": datetime.datetime.now().timestamp(),
+								"metric_value": str(block_loss),
+								"unit": "double",
+								"device_id": mac_address,
+								"context": "nil",
+							}
+						}
+					]
+				}
+
+				metrics_blur = {
+					"records": [
+						{
+							"value": {
+								"timestamp": datetime.datetime.now().timestamp(),
+								"metric_value": str(blur),
+								"unit": "double",
+								"device_id": mac_address,
+								"context": "nil",
+							}
+						}
+					]
+				}
+
+				metrics_temporal_activity = {
+					"records": [
+						{
+							"value": {
+								"timestamp": datetime.datetime.now().timestamp(),
+								"metric_value": str(temporal_activity),
+								"unit": "double",
+								"device_id": mac_address,
+								"context": "nil",
+							}
+						}
+					]
+				}
+
+				producer.send(args.topic[0], json.dumps(metrics_blockiness).encode('utf-8'))
+				producer.send(args.topic[1], json.dumps(metrics_spatial_activity).encode('utf-8'))
+				producer.send(args.topic[2], json.dumps(metrics_block_loss).encode('utf-8'))
+				producer.send(args.topic[3], json.dumps(metrics_blur).encode('utf-8'))
+				producer.send(args.topic[4], json.dumps(metrics_temporal_activity).encode('utf-8'))
 			print('Metrics published into Kafka bus:')
 			print(metrics)
 			print('---------------')
